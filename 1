@@ -1,0 +1,39 @@
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, EmailStr, constr, validator
+import json
+import os
+from datetime import date
+
+app = FastAPI()
+
+class Subscriber(BaseModel):
+    surname: constr(regex=r'^[А-ЯЁ][а-яё]+$')  # Фамилия с заглавной буквы, только кирилица
+    name: constr(regex=r'^[А-ЯЁ][а-яё]+$')     # Имя с заглавной буквы, только кирилица
+    birth_date: date                            # Дата рождения
+    phone_number: constr(regex=r'^\+?[7-9]\d{9}$')  # Номер телефона в формате +79012345678
+    email: EmailStr                             # e-mail
+
+    @validator('birth_date')
+    def check_birth_date(cls, v):
+        if v >= date.today():
+            raise ValueError('Дата рождения не может быть в будущем')
+        return v
+
+@app.post("/submit/")
+async def submit_subscriber(subscriber: Subscriber):
+    data = subscriber.dict()
+    file_path = "subscribers.json"
+    
+    # Сохранение данных в файл
+    if os.path.exists(file_path):
+        with open(file_path, "r") as f:
+            subscribers = json.load(f)
+    else:
+        subscribers = []
+
+    subscribers.append(data)
+
+    with open(file_path, "w") as f:
+        json.dump(subscribers, f, ensure_ascii=False, indent=4)
+
+    return {"message": "Данные успешно сохранены!"}
