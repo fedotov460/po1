@@ -1,0 +1,100 @@
+pip install fastapi[all] passlib[bcrypt] python-multipart
+
+from sqlalchemy import Column, Integer, String
+from sqlalchemy.ext.declarative import declarative_base
+
+Base = declarative_base()
+
+class User(Base):
+    __tablename__ = 'users'
+    
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, index=True)
+    hashed_password = Column(String)
+
+from sqlalchemy.orm import Session
+from passlib.context import CryptContext
+
+class UserDatabase:
+    def __init__(self, session: Session):
+        self.session = session
+        self.pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+    def create_user(self, username: str, password: str):
+        hashed_password = self.pwd_context.hash(password)
+        new_user = User(username=username, hashed_password=hashed_password)
+        self.session.add(new_user)
+        self.session.commit()
+        self.session.refresh(new_user)
+        return new_user
+
+    def get_user(self, username: str):
+        return self.session.query(User).filter(User.username == username).first()
+
+    def verify_password(self, plain_password: str, hashed_password: str):
+        return self.pwd_context.verify(plain_password, hashed_password)
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+
+router = APIRouter()
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+class UserCreate(BaseModel):
+    username: str
+    password: str
+
+class UserLogin(BaseModel):
+    username: str
+    password: str
+
+@router.post("/register")
+def register(user: UserCreate, db: Session = Depends(get_db)):
+    user_db = UserDatabase(db)
+    existing_user = user_db.get_user(user.username)
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Username already registered")
+    user_db.create_user(user.username, user.password)
+    return {"msg": "User  registered successfully"}
+
+@router.post("/token")
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    user_db = UserDatabase(db)
+    user = user_db.get_user(form_data.username)
+    if not user or not user_db.verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(status_code=400, detail="Invalid username or password")
+    return {"access_token": user.username, "token_type": "bearer"}
+
+@router.post("/logout")
+def logout():
+    return {"msg": "Logged out successfully"}
+
+from fastapi import FastAPI, Depends
+from sqlalchemy.orm import Session
+from database import SessionLocal, engine  # Предполагается, что у вас есть файл database.py с настройками базы данных
+from models import Base  # Импортируйте вашу модель User
+from auth import router as auth_router
+
+# Создание базы данных
+Base.metadata.create_all(bind=engine)
+
+app = FastAPI()
+
+# Зависимость для получения сессии базы данных
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+# Подключение маршрутизатора аутентификации
+app.include_router(auth_router, prefix="/auth")
+
+# Пример защищенного эндпойнта
+@app.get("/students/")
+def read_students(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
+ 
+    return db.select_students()  
