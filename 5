@@ -1,0 +1,174 @@
+from sqlalchemy import func
+
+class StudentDatabase:
+    def __init__(self, session):
+        self.session = session
+
+    def insert_student(self, name, faculty, course, grade):
+        new_student = Student(name=name, faculty=faculty, course=course, grade=grade)
+        self.session.add(new_student)
+        self.session.commit()
+
+    def select_students(self):
+        return self.session.query(Student).all()
+
+    def fill_from_csv(self, file_path):
+        df = pd.read_csv(file_path)
+        for index, row in df.iterrows():
+            self.insert_student(row['name'], row['faculty'], row['course'], row['grade'])
+
+    def get_students_by_faculty(self, faculty_name):
+        return self.session.query(Student).filter(Student.faculty == faculty_name).all()
+
+    def get_unique_courses(self):
+        return self.session.query(Student.course).distinct().all()
+
+    def get_average_grade_by_faculty(self, faculty_name):
+        return self.session.query(func.avg(Student.grade)).filter(Student.faculty == faculty_name).scalar()
+
+    def get_students_below_grade_in_course(self, course_number, threshold=30):
+        return self.session.query(Student).filter(Student.course == course_number, Student.grade < threshold).all()
+
+    def update_student(self, student_id, name=None, faculty=None, course=None, grade=None):
+        student = self.session.query(Student).filter(Student.id == student_id).first()
+        if student:
+            if name is not None:
+                student.name = name
+            if faculty is not None:
+                student.faculty = faculty
+            if course is not None:
+                student.course = course
+            if grade is not None:
+                student.grade = grade
+            self.session.commit()
+            return student
+        return None
+
+    def delete_student(self, student_id):
+        student = self.session.query(Student).filter(Student.id == student_id).first()
+        if student:
+            self.session.delete(student)
+            self.session.commit()
+            return True
+        return False
+
+        from sqlalchemy import func
+
+class StudentDatabase:
+    def __init__(self, session):
+        self.session = session
+
+    def insert_student(self, name, faculty, course, grade):
+        new_student = Student(name=name, faculty=faculty, course=course, grade=grade)
+        self.session.add(new_student)
+        self.session.commit()
+
+    def select_students(self):
+        return self.session.query(Student).all()
+
+    def fill_from_csv(self, file_path):
+        df = pd.read_csv(file_path)
+        for index, row in df.iterrows():
+            self.insert_student(row['name'], row['faculty'], row['course'], row['grade'])
+
+    def get_students_by_faculty(self, faculty_name):
+        return self.session.query(Student).filter(Student.faculty == faculty_name).all()
+
+    def get_unique_courses(self):
+        return self.session.query(Student.course).distinct().all()
+
+    def get_average_grade_by_faculty(self, faculty_name):
+        return self.session.query(func.avg(Student.grade)).filter(Student.faculty == faculty_name).scalar()
+
+    def get_students_below_grade_in_course(self, course_number, threshold=30):
+        return self.session.query(Student).filter(Student.course == course_number, Student.grade < threshold).all()
+
+    def update_student(self, student_id, name=None, faculty=None, course=None, grade=None):
+        student = self.session.query(Student).filter(Student.id == student_id).first()
+        if student:
+            if name is not None:
+                student.name = name
+            if faculty is not None:
+                student.faculty = faculty
+            if course is not None:
+                student.course = course
+            if grade is not None:
+                student.grade = grade
+            self.session.commit()
+            return student
+        return None
+
+    def delete_student(self, student_id):
+        student = self.session.query(Student).filter(Student.id == student_id).first()
+        if student:
+            self.session.delete(student)
+            self.session.commit()
+            return True
+        return False
+Шаг 2: Интеграция с FastAPI
+Теперь мы создадим FastAPI приложение и добавим эндпойнты для выполнения операций CRUD.
+
+python
+Run
+Copy code
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
+from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI()
+
+# Настройка CORS (если необходимо)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Замените на нужные вам источники
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Модель для валидации данных
+class StudentCreate(BaseModel):
+    name: str
+    faculty: str
+    course: int
+    grade: float
+
+class StudentUpdate(BaseModel):
+    name: str = None
+    faculty: str = None
+    course: int = None
+    grade: float = None
+
+# Инициализация базы данных
+db = StudentDatabase(session)
+
+@app.post("/students/", response_model=Student)
+def create_student(student: StudentCreate):
+    db.insert_student(student.name, student.faculty, student.course, student.grade)
+    return db.select_students()[-1]  # Возвращаем только что добавленного студента
+
+@app.get("/students/", response_model=list[Student])
+def read_students():
+    return db.select_students()
+
+@app.get("/students/faculty/{faculty_name}", response_model=list[Student])
+def read_students_by_faculty(faculty_name: str):
+    return db.get_students_by_faculty(faculty_name)
+
+@app.put("/students/{student_id}", response_model=Student)
+def update_student(student_id: int, student: StudentUpdate):
+    updated_student = db.update_student(student_id, student.name, student.faculty, student.course, student.grade)
+    if updated_student:
+        return updated_student
+    raise HTTPException(status_code=404, detail="Student not found")
+
+@app.delete("/students/{student_id}", response_model=dict)
+def delete_student(student_id: int):
+    if db.delete_student(student_id):
+        return {"detail": "Student deleted"}
+    raise HTTPException(status_code=404, detail="Student not found")
+
+@app.get("/students/courses/", response_model=list[int])
+def read_unique_courses():
+    return [course[0] for course in db.get_unique_courses()]
