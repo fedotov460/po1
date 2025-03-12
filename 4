@@ -1,0 +1,76 @@
+from sqlalchemy import create_engine, Column, Integer, String, Float
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+import pandas as pd
+
+Base = declarative_base()
+
+class Student(Base):
+    __tablename__ = 'students'
+    
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    faculty = Column(String)
+    course = Column(Integer)
+    grade = Column(Float)
+
+# Создание базы данных
+engine = create_engine('sqlite:///students.db')  # Используем SQLite для простоты
+Base.metadata.create_all(engine)
+
+Session = sessionmaker(bind=engine)
+session = Session()
+
+class StudentDatabase:
+    def __init__(self, session):
+        self.session = session
+
+    def insert_student(self, name, faculty, course, grade):
+        new_student = Student(name=name, faculty=faculty, course=course, grade=grade)
+        self.session.add(new_student)
+        self.session.commit()
+
+    def select_students(self):
+        return self.session.query(Student).all()
+
+    def fill_from_csv(self, file_path):
+        df = pd.read_csv(file_path)
+        for index, row in df.iterrows():
+            self.insert_student(row['name'], row['faculty'], row['course'], row['grade'])
+
+    def get_students_by_faculty(self, faculty_name):
+        return self.session.query(Student).filter(Student.faculty == faculty_name).all()
+
+    def get_unique_courses(self):
+        return self.session.query(Student.course).distinct().all()
+
+    def get_average_grade_by_faculty(self, faculty_name):
+        return self.session.query(func.avg(Student.grade)).filter(Student.faculty == faculty_name).scalar()
+
+    def get_students_below_grade_in_course(self, course_number, threshold=30):
+        return self.session.query(Student).filter(Student.course == course_number, Student.grade < threshold).all()
+
+
+if __name__ == "__main__":
+    db = StudentDatabase(session)
+
+    # Заполнение базы данных из CSV
+    db.fill_from_csv('students.csv')
+
+    # Получение списка студентов по факультету
+    students = db.get_students_by_faculty('Факультет информатики')
+    for student in students:
+        print(student.name)
+
+    # Получение уникальных курсов
+    unique_courses = db.get_unique_courses()
+    print("Уникальные курсы:", unique_courses)
+
+    # Получение среднего балла по факультету
+    average_grade = db.get_average_grade_by_faculty('Факультет информатики')
+    print("Средний балл:", average_grade)
+
+    # Получение списка студентов по курсу с оценкой ниже 30
+    students_below_30 = db.get_students_below_grade_in_course(1)  # Например, курс 1
+    for student in students_below_30:
+        print(student.name, student.grade)
