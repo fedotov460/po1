@@ -1,0 +1,105 @@
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UI Kit</title>
+  <link rel="stylesheet" href="styles/base/reset.css">
+  <link rel="stylesheet" href="styles/base/variables.css">
+  <link rel="stylesheet" href="styles/components/button.css">
+  <link rel="stylesheet" href="styles/components/input.css">
+  <link rel="stylesheet" href="styles/components/card.css">
+  <link rel="stylesheet" href="styles/components/navbar.css">
+  <link rel="stylesheet" href="styles/components/dropdown.css">
+  <link rel="stylesheet" href="styles/components/checkbox-radio.css">
+  <link rel="stylesheet" href="styles/layout/grid.css">
+</head>
+<body>
+  <header class="navbar navbar--desktop">
+    <nav class="navbar__menu">
+      <a href="#" class="navbar__link">Главная</a>
+      <a href="#" class="navbar__link">Компоненты</a>
+      <a href="#" class="navbar__link">Контакты</a>
+    </nav>
+    <div class="navbar__burger">
+      <span></span><span></span><span></span>
+    </div>
+  </header>
+
+  <main class="container">
+    <section>
+      <h2>Кнопки</h2>
+      <button class="button button--primary button--small">Primary Small</button>
+      <button class="button button--secondary button--medium">Secondary Medium</button>
+      <button class="button button--disabled button--large" disabled>Disabled Large</button>
+    </section>
+
+    <section>
+      <h2>Поля ввода</h2>
+      <div class="input input--normal">
+        <input type="text" placeholder="Введите имя">
+      </div>
+      <div class="input input--focus">
+        <input type="text" placeholder="Фокус">
+      </div>
+      <div class="input input--error">
+        <input type="text" placeholder="Ошибка">
+        <span class="input__error-text">Это поле обязательно</span>
+      </div>
+    </section>
+
+    <section>
+      <h2>Выпадающий список</h2>
+      <select class="dropdown">
+        <option>Выберите вариант</option>
+        <option>Вариант 1</option>
+        <option>Вариант 2</option>
+      </select>
+    </section>
+
+    <section>
+      <h2>Чекбоксы и Радиокнопки</h2>
+      <label class="checkbox">
+        <input type="checkbox"> Согласен с условиями
+      </label>
+      <label class="radio">
+        <input type="radio" name="gender" checked> Мужчина
+      </label>
+      <label class="radio">
+        <input type="radio" name="gender"> Женщина
+      </label>
+    </section>
+
+    <section>
+      <h2>Карточки</h2>
+      <div class="card card--small">
+        <img src="https://via.placeholder.com/150" alt="image" class="card__image">
+        <h3 class="card__title">Маленькая карточка</h3>
+        <p class="card__text">Текст описания</p>
+      </div>
+      <div class="card card--medium card--no-image">
+        <h3 class="card__title">Карточка без изображения</h3>
+        <p class="card__text">Описание карточки без картинки</p>
+      </div>
+      <div class="card card--large">
+        <img src="https://via.placeholder.com/300x200" alt="image" class="card__image">
+        <h3 class="card__title">Большая карточка</h3>
+        <p class="card__text">Текст описания для большой карточки</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>Сетка</h2>
+      <div class="grid">
+        <div class="grid__item">1</div>
+        <div class="grid__item">2</div>
+        <div class="grid__item">3</div>
+        <div class="grid__item">4</div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Документация UI Kit</p>
+  </footer>
+</body>
+</html>
