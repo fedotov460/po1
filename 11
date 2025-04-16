@@ -1,1 +1,84 @@
+// СИНХРОННЫЙ КОД — выполняется сразу
+console.log('Синхронный код 1');
+
+// setTimeout — добавляется в очередь macrotask (выполнится после всех microtask и синхронного кода)
+setTimeout(() => {
+  console.log('setTimeout 1'); // MACROTASK
+}, 0);
+
+// Promise.resolve().then — добавляется в очередь microtask (выполнится после синхронного кода, но до macrotask)
+Promise.resolve().then(() => {
+  console.log('Promise 1'); // MICROTASK
+});
+
+// СИНХРОННЫЙ КОД — выполняется сразу
+console.log('Синхронный код 2');
+
+
+// Имитация задержки
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Функция запроса данных (имитация API-запроса)
+function fetchData(url) {
+  return delay(2000).then(() => {
+    if (url === 'https://api.example.com/users') {
+      return ['Alice', 'Bob', 'Charlie'];
+    } else if (url === 'https://api.example.com/users/0') {
+      return { name: 'Alice', age: 25, email: 'alice@example.com' };
+    } else {
+      throw new Error('URL не найден');
+    }
+  });
+}
+
+// Цепочка запросов
+fetchData('https://api.example.com/users')
+  .then(users => {
+    console.log('Список пользователей:', users);
+    return fetchData(`https://api.example.com/users/0`);
+  })
+  .then(user => {
+    console.log('Информация о пользователе:', user);
+  })
+  .catch(error => {
+    console.error('Ошибка при получении данных:', error.message);
+  });
+
+
+// Имитация задержки
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Асинхронная функция запроса данных
+function fetchData(url) {
+  return delay(2000).then(() => {
+    if (url === 'https://api.example.com/users') {
+      return ['Alice', 'Bob', 'Charlie'];
+    } else if (url === 'https://api.example.com/users/0') {
+      return { name: 'Alice', age: 25, email: 'alice@example.com' };
+    } else {
+      throw new Error('URL не найден');
+    }
+  });
+}
+
+// Async/await версия с обработкой ошибок
+async function loadUserData() {
+  try {
+    const users = await fetchData('https://api.example.com/users');
+    console.log('Список пользователей:', users);
+
+    await delay(1000); // дополнительная пауза между запросами
+
+    const user = await fetchData('https://api.example.com/users/0');
+    console.log('Информация о пользователе:', user);
+  } catch (error) {
+    console.error('Ошибка при загрузке данных:', error.message);
+  }
+}
+
+loadUserData();
 
